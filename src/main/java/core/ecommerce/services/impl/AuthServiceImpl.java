@@ -1,11 +1,13 @@
-package core.ecommerce.services.implementation;
+package core.ecommerce.services.impl;
 
 import core.ecommerce.dto.AuthResponse;
 import core.ecommerce.dto.LoginRequest;
 import core.ecommerce.dto.RegisterRequest;
 import core.ecommerce.entity.Role;
 import core.ecommerce.entity.User;
+import core.ecommerce.repository.RoleRepository;
 import core.ecommerce.repository.UserRepository;
+import core.ecommerce.services.AuthService;
 import core.ecommerce.util.JwtUtil;
 
 import lombok.RequiredArgsConstructor;
@@ -17,27 +19,27 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 
-public class AuthServiceImpl {
+public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
+    private final RoleRepository roleRepository;
 
     public AuthResponse register(RegisterRequest request) {
         var user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        try {
-            user.setRole(Role.valueOf(request.getRole().toUpperCase()));
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Rol inválido. Los valores permitidos son: ADMIN o CLIENT.");
-        }
+        Role role = roleRepository.findByName(request.getRole().toUpperCase())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Rol inválido."));
+        user.setRole(role);
 
         userRepository.save(user);
 
         String token = jwtUtil.generateToken(user);
-        return new AuthResponse(token, user.getRole().name(), user.getEmail());
+        return new AuthResponse(token, role.getName(), user.getEmail());
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -49,6 +51,6 @@ public class AuthServiceImpl {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         String token = jwtUtil.generateToken(user);
-        return new AuthResponse(token, user.getRole().name(), user.getEmail());
+        return new AuthResponse(token, user.getRole().getName(), user.getEmail());
     }
 }

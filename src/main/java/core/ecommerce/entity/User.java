@@ -23,7 +23,7 @@ public class User {
 
     private String email;
 
-    @Enumerated(EnumType.STRING)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "role_id")
     private Role role;
-
 }

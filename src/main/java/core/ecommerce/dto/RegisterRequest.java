@@ -15,5 +15,5 @@ public class RegisterRequest {
     @Size(min = 6, message = "La contraseña debe tener al menos 6 caracteres")
     @NotBlank(message = "La contraseña es obligatoria")
     private String password;
-    private String role; // "ADMIN", "CLIENT".
+    private String role;
 }
