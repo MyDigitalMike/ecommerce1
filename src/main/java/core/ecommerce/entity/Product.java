@@ -32,12 +32,14 @@ public class Product {
     private String description;
 
     private double price;
+    @Column(nullable = false)
     private boolean active;
 
     public boolean isActive() {
         return active;
     }
 
+    @Column(nullable = false)
     private int stock;
 
     @CreationTimestamp

@@ -14,5 +14,13 @@ public interface ProductService {
 
     void delete(Long id);
 
-    List<ProductResponse> search(String keyword);
+    List<ProductResponse> search(String query);
+
+    List<ProductResponse> getActiveProducts();
+
+    ProductResponse updateStock(Long productId, int newStock);
+
+    ProductResponse getStockByProductId(Long productId);
+    
+    ProductResponse activateProduct(Long id);
 }

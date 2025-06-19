@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import core.ecommerce.config.DiscountProperties;
 import core.ecommerce.dto.ProductRequest;
 import core.ecommerce.dto.ProductResponse;
 import core.ecommerce.entity.Product;
@@ -18,7 +19,7 @@ import org.springframework.beans.factory.annotation.Value;
 @Service
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
-
+    private final DiscountProperties discountProperties;
     private final ProductRepository productRepository;
     @Value("${discount.random.enabled:false}")
     private boolean randomDiscountEnabled;
@@ -56,11 +57,11 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public List<ProductResponse> search(String keyword) {
-        return productRepository.findByNameContainingIgnoreCase(keyword)
-                .stream()
+    public List<ProductResponse> search(String query) {
+        List<Product> results = productRepository.searchByNameOrDescription(query);
+        return results.stream()
                 .map(this::mapToResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -103,14 +104,16 @@ public class ProductServiceImpl implements ProductService {
 
     private double applyDiscount(double price, boolean isFrequentClient) {
         LocalDateTime now = LocalDateTime.now();
-        boolean isInRange = now.isAfter(discountStart) && now.isBefore(discountEnd);
+        boolean isInRange = now.isAfter(discountProperties.getTimeStart())
+                && now.isBefore(discountProperties.getTimeEnd());
+
         double finalPrice = price;
 
         if (isInRange) {
-            finalPrice *= 0.9; // 10% de descuento general
+            finalPrice *= 0.9; // 10% descuento general
 
-            if (randomDiscountEnabled) {
-                finalPrice *= 0.5; // 50% adicional si se marca como "aleatorio"
+            if (discountProperties.isRandomEnabled()) {
+                finalPrice *= 0.5; // 50% adicional si aleatorio
             }
 
             if (isFrequentClient) {
@@ -121,4 +124,47 @@ public class ProductServiceImpl implements ProductService {
         return finalPrice;
     }
 
+    @Override
+    public List<ProductResponse> getActiveProducts() {
+        return productRepository.findByActiveTrue()
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public ProductResponse updateStock(Long productId, int newStock) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+
+        product.setStock(newStock);
+
+        // Inactivamos si ya no hay stock
+        if (newStock <= 0) {
+            product.setActive(false);
+        }
+
+        productRepository.save(product);
+        auditService.log("Stock actualizado para producto: " + product.getName(), product.getId().toString(), "UPDATE",
+                "SYSTEM",
+                "Nuevo stock: " + newStock);
+        return mapToResponse(product);
+    }
+
+    @Override
+    public ProductResponse getStockByProductId(Long productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+
+        return mapToResponse(product);
+    }
+
+    @Override
+    public ProductResponse activateProduct(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+
+        product.setActive(true);
+        return mapToResponse(productRepository.save(product));
+    }
 }
