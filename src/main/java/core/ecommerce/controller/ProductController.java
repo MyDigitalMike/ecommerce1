@@ -2,6 +2,7 @@ package core.ecommerce.controller;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,7 +28,7 @@ public class ProductController {
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<ProductResponse> create(@RequestBody ProductRequest request) {
-        return ResponseEntity.ok(productService.create(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(productService.create(request));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'CLIENT')")

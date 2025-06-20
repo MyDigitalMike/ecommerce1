@@ -1,6 +1,5 @@
 package core.ecommerce.security;
 
-import core.ecommerce.repository.UserRepository;
 import core.ecommerce.util.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -19,7 +18,6 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
-    private final UserRepository userRepository;
     private final CustomUserDetailsService userDetailsService;
 
     @Override
